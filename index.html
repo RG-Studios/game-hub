@@ -2,13 +2,80 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Game Hub</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>🎮 Game Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Orbitron', sans-serif;
+      background: linear-gradient(135deg, #0f0f0f, #1f1f1f);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    header {
+      text-align: center;
+      margin: 40px 0 20px;
+    }
+    header h1 {
+      font-size: 3rem;
+      color: #00ffea;
+    }
+    header p {
+      font-size: 1.2rem;
+      color: #aaa;
+    }
+    .game-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 20px;
+      width: 90%;
+      max-width: 1000px;
+      margin: 30px auto;
+    }
+    .game-card {
+      background: #1a1a1a;
+      border: 2px solid #00ffea;
+      border-radius: 12px;
+      text-align: center;
+      padding: 20px;
+      text-decoration: none;
+      color: white;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .game-card:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 15px #00ffea88;
+    }
+    .game-card img {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 10px;
+    }
+    .game-card span {
+      display: block;
+      font-size: 1.1rem;
+      color: #00ffea;
+    }
+    footer {
+      margin-top: auto;
+      padding: 20px;
+      text-align: center;
+      color: #777;
+      font-size: 0.9rem;
+    }
+  </style>
 </head>
 <body>
   <header>
     <h1>🎮 Game Hub</h1>
-    <p>Select a game to play!</p>
+    <p>Select a game to play</p>
   </header>
   <main class="game-list">
     <a class="game-card" href="games/tictactoe/index.html">
@@ -16,12 +83,12 @@
       <span>Tic Tac Toe</span>
     </a>
     <a class="game-card" href="games/snake/index.html">
-      <img src="assets/snake.png" alt="Snake Game">
+      <img src="assets/snake.png" alt="Snake">
       <span>Snake</span>
     </a>
   </main>
   <footer>
-    <p>Made with ❤️ for fun. Host on GitHub Pages.</p>
+    <p>Made with ❤️ and HTML5 · Host this on GitHub Pages</p>
   </footer>
 </body>
 </html>
