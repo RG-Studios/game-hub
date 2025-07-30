@@ -15,30 +15,25 @@
       display: block;
       background: #70c5ce;
     }
-    #tap-button, #restart-button {
+    #restart-button {
       position: fixed;
       bottom: 20px;
+      right: 20px;
       padding: 16px 28px;
       font-size: 18px;
-      background: #ffffff;
+      background-color: #ff5e57;
+      color: white;
       border-radius: 12px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.3);
       border: none;
       cursor: pointer;
       z-index: 999;
-    }
-    #tap-button { left: 20px; }
-    #restart-button {
-      right: 20px;
       display: none;
-      background-color: #ff5e57;
-      color: white;
     }
   </style>
 </head>
 <body>
   <canvas id="game"></canvas>
-  <button id="tap-button">TAP</button>
   <button id="restart-button">RESTART</button>
 
   <script>
@@ -47,7 +42,7 @@
 
     let W, H;
     let bird, gravity, lift, pipes, frame, score, gameOver;
-    let pipeSpeed, spawnRate;
+    let pipeSpeed, spawnRate, pipeGap;
 
     function resizeCanvas() {
       W = window.innerWidth;
@@ -68,7 +63,8 @@
       score = 0;
       gameOver = false;
       pipeSpeed = 2;
-      spawnRate = 100;
+      spawnRate = 120; // Slower pipe generation initially
+      pipeGap = 180; // Larger gap at start
       document.getElementById("restart-button").style.display = "none";
       update();
     }
@@ -110,6 +106,7 @@
           if (score % 5 === 0) {
             pipeSpeed += 0.5;
             spawnRate = Math.max(60, spawnRate - 5);
+            pipeGap = Math.max(120, pipeGap - 5); // Reduce gap to make it harder
           }
         }
       }
@@ -118,9 +115,8 @@
     }
 
     function newPipe() {
-      let gap = 150;
       let top = Math.random() * (H / 2);
-      let bottom = top + gap;
+      let bottom = top + pipeGap;
       pipes.push({ x: W, top, bottom, w: 50, scored: false });
     }
 
@@ -156,11 +152,12 @@
       requestAnimationFrame(update);
     }
 
-    // Controls
+    // TAP anywhere to flap
     window.addEventListener("keydown", (e) => {
       if (e.code === "Space") flap();
     });
-    document.getElementById("tap-button").addEventListener("click", flap);
+    window.addEventListener("mousedown", flap);   // Mouse click
+    window.addEventListener("touchstart", flap);  // Touchscreen tap
     document.getElementById("restart-button").addEventListener("click", resetGame);
 
     resetGame();
