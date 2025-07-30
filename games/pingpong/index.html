@@ -35,167 +35,193 @@
 <body>
   <canvas id="game"></canvas>
   <button id="restartBtn" onclick="restartGame()">Restart Game</button>
+<script>
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+  let W = window.innerWidth;
+  let H = window.innerHeight;
+  canvas.width = W;
+  canvas.height = H;
 
-  <script>
-    const canvas = document.getElementById("game");
-    const ctx = canvas.getContext("2d");
-    let W = window.innerWidth;
-    let H = window.innerHeight;
-    canvas.width = W;
-    canvas.height = H;
+  const paddleWidth = 100, paddleHeight = 14;
+  let playerX, aiX, ball, lives, score, timeStart, difficultyMultiplier, gameRunning, aiFailedMessageTimer;
 
-    const paddleWidth = 100, paddleHeight = 14;
-    let playerX, aiX, ball, lives, score, timeStart, difficultyMultiplier, gameRunning, aiFailedMessageTimer;
+  const restartBtn = document.getElementById("restartBtn");
+  let waitingForTap = true;
+  let pausedAfterLifeLoss = false;
 
-    const restartBtn = document.getElementById("restartBtn");
+  function initGame() {
+    playerX = W / 2 - paddleWidth / 2;
+    aiX = W / 2 - paddleWidth / 2;
 
-    function initGame() {
-      playerX = W / 2 - paddleWidth / 2;
-      aiX = W / 2 - paddleWidth / 2;
+    ball = {
+      x: W / 2,
+      y: H / 2,
+      size: 10,
+      vx: 4 * (Math.random() > 0.5 ? 1 : -1),
+      vy: 5
+    };
 
-      ball = {
-        x: W / 2,
-        y: H / 2,
-        size: 10,
-        vx: 4 * (Math.random() > 0.5 ? 1 : -1),
-        vy: 5
-      };
+    lives = 3;
+    score = 0;
+    timeStart = Date.now();
+    difficultyMultiplier = 1;
+    aiFailedMessageTimer = 0;
+    gameRunning = true;
+    waitingForTap = true;
+    pausedAfterLifeLoss = false;
+    restartBtn.style.display = "none";
+    drawStartScreen();
+  }
 
-      lives = 3;
-      score = 0;
-      timeStart = Date.now();
-      difficultyMultiplier = 1;
-      aiFailedMessageTimer = 0;
-      gameRunning = true;
-      restartBtn.style.display = "none";
-      update();
+  function drawStartScreen() {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = "#00ccff";
+    ctx.font = "24px sans-serif";
+    ctx.fillText("Tap to Start", W / 2 - 60, H / 2);
+  }
+
+  function drawPaddle(x, y) {
+    ctx.fillStyle = "#00ffff";
+    ctx.fillRect(x, y, paddleWidth, paddleHeight);
+  }
+
+  function drawBall() {
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ball.size, 0, Math.PI * 2);
+    ctx.fillStyle = "#ffff00";
+    ctx.fill();
+  }
+
+  function drawUI() {
+    ctx.fillStyle = "#fff";
+    ctx.font = "16px sans-serif";
+    let elapsedTime = Math.floor((Date.now() - timeStart) / 1000);
+    ctx.fillText("Score: " + score, 10, 20);
+    ctx.fillText("Time: " + elapsedTime + "s", 10, 40);
+    ctx.fillText("Lives: " + "❤️".repeat(lives), W - 100, 20);
+  }
+
+  function resetBall() {
+    ball.x = W / 2;
+    ball.y = H / 2;
+    ball.vx = 4 * (Math.random() > 0.5 ? 1 : -1);
+    ball.vy = 5;
+    difficultyMultiplier = 1;
+  }
+
+  function showAIFailureMessage() {
+    aiFailedMessageTimer = 100;
+  }
+
+  function drawAIFailureDialog() {
+    if (aiFailedMessageTimer > 0) {
+      ctx.fillStyle = "#0f0";
+      ctx.font = "22px sans-serif";
+      ctx.fillText("Great! You just smashed your opponent!", W / 2 - 170, H / 2);
+      aiFailedMessageTimer--;
     }
+  }
 
-    function drawPaddle(x, y) {
-      ctx.fillStyle = "#00ffff";
-      ctx.fillRect(x, y, paddleWidth, paddleHeight);
-    }
+  function gameOver() {
+    gameRunning = false;
+    ctx.fillStyle = "#f00";
+    ctx.font = "24px sans-serif";
+    ctx.fillText("Game Over! Final Score: " + score, W / 2 - 120, H / 2 + 40);
+    restartBtn.style.display = "block";
+  }
 
-    function drawBall() {
-      ctx.beginPath();
-      ctx.arc(ball.x, ball.y, ball.size, 0, Math.PI * 2);
-      ctx.fillStyle = "#ffff00";
-      ctx.fill();
-    }
-
-    function drawUI() {
-      ctx.fillStyle = "#fff";
-      ctx.font = "16px sans-serif";
-      let elapsedTime = Math.floor((Date.now() - timeStart) / 1000);
-      ctx.fillText("Score: " + score, 10, 20);
-      ctx.fillText("Time: " + elapsedTime + "s", 10, 40);
-      ctx.fillText("Lives: " + "❤️".repeat(lives), W - 100, 20);
-    }
-
-    function resetBall() {
-      ball.x = W / 2;
-      ball.y = H / 2;
-      ball.vx = 4 * (Math.random() > 0.5 ? 1 : -1);
-      ball.vy = 5;
-      difficultyMultiplier = 1;
-    }
-
-    function showAIFailureMessage() {
-      aiFailedMessageTimer = 100;
-    }
-
-    function drawAIFailureDialog() {
-      if (aiFailedMessageTimer > 0) {
-        ctx.fillStyle = "#0f0";
-        ctx.font = "22px sans-serif";
-        ctx.fillText("Great! You just smashed your opponent!", W / 2 - 170, H / 2);
-        aiFailedMessageTimer--;
-      }
-    }
-
-    function gameOver() {
-      gameRunning = false;
-      ctx.fillStyle = "#f00";
-      ctx.font = "24px sans-serif";
-      ctx.fillText("Game Over! Final Score: " + score, W / 2 - 120, H / 2 + 40);
-      restartBtn.style.display = "block";
-    }
-
-    function update() {
-      if (!gameRunning) return;
-
-      ctx.clearRect(0, 0, W, H);
-      let elapsed = (Date.now() - timeStart) / 1000;
-      difficultyMultiplier = 1 + elapsed / 30;
-
-      aiX = ball.x - paddleWidth / 2;
-      aiX = Math.max(0, Math.min(W - paddleWidth, aiX));
-
-      ball.x += ball.vx * difficultyMultiplier;
-      ball.y += ball.vy * difficultyMultiplier;
-
-      if (ball.x < ball.size || ball.x > W - ball.size) ball.vx *= -1;
-
-      if (ball.y + ball.size > H - paddleHeight &&
-          ball.x > playerX && ball.x < playerX + paddleWidth) {
-        ball.vy *= -1;
-        score += Math.floor(5 * difficultyMultiplier);
-      }
-
-      if (ball.y - ball.size < paddleHeight &&
-          ball.x > aiX && ball.x < aiX + paddleWidth) {
-        ball.vy *= -1;
-      }
-
-      if (ball.y < 0) {
-        score += 50;
-        showAIFailureMessage();
-        resetBall();
-      }
-
-      if (ball.y > H) {
-        lives--;
-        if (lives <= 0) {
-          gameOver();
-          return;
-        } else {
-          resetBall();
-        }
-      }
-
-      drawPaddle(playerX, H - paddleHeight);
-      drawPaddle(aiX, 0);
-      drawBall();
+  function update() {
+    if (!gameRunning) return;
+    if (waitingForTap || pausedAfterLifeLoss) {
       drawUI();
       drawAIFailureDialog();
+      return requestAnimationFrame(update);
+    }
 
+    ctx.clearRect(0, 0, W, H);
+    let elapsed = (Date.now() - timeStart) / 1000;
+    difficultyMultiplier = 1 + elapsed / 30;
+
+    aiX = ball.x - paddleWidth / 2;
+    aiX = Math.max(0, Math.min(W - paddleWidth, aiX));
+
+    ball.x += ball.vx * difficultyMultiplier;
+    ball.y += ball.vy * difficultyMultiplier;
+
+    if (ball.x < ball.size || ball.x > W - ball.size) ball.vx *= -1;
+
+    if (ball.y + ball.size > H - paddleHeight &&
+        ball.x > playerX && ball.x < playerX + paddleWidth) {
+      ball.vy *= -1;
+      score += Math.floor(5 * difficultyMultiplier);
+    }
+
+    if (ball.y - ball.size < paddleHeight &&
+        ball.x > aiX && ball.x < aiX + paddleWidth) {
+      ball.vy *= -1;
+    }
+
+    if (ball.y < 0) {
+      score += 50;
+      showAIFailureMessage();
+      resetBall();
+    }
+
+    if (ball.y > H) {
+      lives--;
+      if (lives <= 0) {
+        gameOver();
+        return;
+      } else {
+        pausedAfterLifeLoss = true;
+        resetBall();
+      }
+    }
+
+    drawPaddle(playerX, H - paddleHeight);
+    drawPaddle(aiX, 0);
+    drawBall();
+    drawUI();
+    drawAIFailureDialog();
+
+    requestAnimationFrame(update);
+  }
+
+  function restartGame() {
+    initGame();
+  }
+
+  // Touch controls
+  let lastX = null;
+  canvas.addEventListener("touchstart", e => {
+    lastX = e.touches[0].clientX;
+
+    if (waitingForTap) {
+      waitingForTap = false;
       requestAnimationFrame(update);
     }
 
-    function restartGame() {
-      initGame();
+    if (pausedAfterLifeLoss) {
+      pausedAfterLifeLoss = false;
+      requestAnimationFrame(update);
     }
+  });
 
-    // Swipe controls
-    let lastX = null;
-    canvas.addEventListener("touchstart", e => {
+  canvas.addEventListener("touchmove", e => {
+    if (lastX != null) {
+      let deltaX = e.touches[0].clientX - lastX;
+      playerX += deltaX;
+      playerX = Math.max(0, Math.min(W - paddleWidth, playerX));
       lastX = e.touches[0].clientX;
-    });
+    }
+  });
 
-    canvas.addEventListener("touchmove", e => {
-      if (lastX != null) {
-        let deltaX = e.touches[0].clientX - lastX;
-        playerX += deltaX;
-        playerX = Math.max(0, Math.min(W - paddleWidth, playerX));
-        lastX = e.touches[0].clientX;
-      }
-    });
+  canvas.addEventListener("touchend", () => {
+    lastX = null;
+  });
 
-    canvas.addEventListener("touchend", () => {
-      lastX = null;
-    });
-
-    initGame();
-  </script>
+  initGame();
+    </script> 
 </body>
 </html>
