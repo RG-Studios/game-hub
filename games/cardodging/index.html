@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Car Dodging Game</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: white;
+      font-family: sans-serif;
+    }
+
+    h1 {
+      margin: 20px;
+    }
+
+    canvas {
+      background: #333;
+      border: 2px solid #fff;
+      display: block;
+    }
+
+    #score {
+      margin: 10px;
+      font-size: 20px;
+    }
+
+    @media (max-width: 500px) {
+      canvas {
+        width: 300px;
+        height: 500px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Car Dodging Game</h1>
+  <div id="score">Score: 0</div>
+  <canvas id="gameCanvas" width="400" height="600"></canvas>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let player = { x: 180, y: 500, width: 40, height: 80, color: "lime" };
+    let enemies = [];
+    let score = 0;
+    let speed = 2;
+    let leftPressed = false;
+    let rightPressed = false;
+
+    function drawCar(car) {
+      ctx.fillStyle = car.color;
+      ctx.fillRect(car.x, car.y, car.width, car.height);
+    }
+
+    function spawnEnemy() {
+      const lane = Math.floor(Math.random() * 4);
+      const x = 60 + lane * 70;
+      enemies.push({ x: x, y: -100, width: 40, height: 80, color: "red" });
+    }
+
+    function updateGame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Player control
+      if (leftPressed && player.x > 0) player.x -= 5;
+      if (rightPressed && player.x + player.width < canvas.width) player.x += 5;
+
+      drawCar(player);
+
+      for (let e of enemies) {
+        e.y += speed;
+        drawCar(e);
+
+        // Collision
+        if (
+          player.x < e.x + e.width &&
+          player.x + player.width > e.x &&
+          player.y < e.y + e.height &&
+          player.y + player.height > e.y
+        ) {
+          alert("Game Over! Score: " + score);
+          document.location.reload();
+        }
+      }
+
+      // Remove passed cars
+      enemies = enemies.filter(e => e.y < canvas.height);
+
+      score++;
+      document.getElementById("score").textContent = "Score: " + score;
+
+      if (score % 100 === 0) speed += 0.5;
+
+      requestAnimationFrame(updateGame);
+    }
+
+    setInterval(spawnEnemy, 1000);
+
+    document.addEventListener("keydown", e => {
+      if (e.key === "ArrowLeft") leftPressed = true;
+      if (e.key === "ArrowRight") rightPressed = true;
+    });
+
+    document.addEventListener("keyup", e => {
+      if (e.key === "ArrowLeft") leftPressed = false;
+      if (e.key === "ArrowRight") rightPressed = false;
+    });
+
+    updateGame();
+  </script>
+</body>
+</html>
