@@ -3,12 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Advanced Ping Pong</title>
+  <title>Advanced Ping Pong AI</title>
   <style>
-    * {
-      -webkit-user-select: none;
-      -webkit-touch-callout: none;
-    }
     html, body {
       margin: 0;
       padding: 0;
@@ -50,6 +46,7 @@
     let timeStart = Date.now();
     let difficultyMultiplier = 1;
     let gameRunning = true;
+    let aiFailedMessageTimer = 0;
 
     function drawPaddle(x, y) {
       ctx.fillStyle = "#00ffff";
@@ -80,9 +77,22 @@
       difficultyMultiplier = 1;
     }
 
+    function showAIFailureMessage() {
+      aiFailedMessageTimer = 100;
+    }
+
+    function drawAIFailureDialog() {
+      if (aiFailedMessageTimer > 0) {
+        ctx.fillStyle = "#0f0";
+        ctx.font = "22px sans-serif";
+        ctx.fillText("Great! You just smashed your opponent!", W / 2 - 170, H / 2);
+        aiFailedMessageTimer--;
+      }
+    }
+
     function gameOver() {
       gameRunning = false;
-      ctx.fillStyle = "#0f0";
+      ctx.fillStyle = "#f00";
       ctx.font = "24px sans-serif";
       ctx.fillText("Game Over! Final Score: " + score, W / 2 - 120, H / 2);
     }
@@ -92,35 +102,41 @@
 
       ctx.clearRect(0, 0, W, H);
       let elapsed = (Date.now() - timeStart) / 1000;
-
       difficultyMultiplier = 1 + elapsed / 30;
 
-      // AI follows the ball with precision based on difficulty
-      aiX += ((ball.x - (aiX + paddleWidth / 2)) * 0.05 * difficultyMultiplier);
+      // AI Precision: follow ball perfectly
+      aiX = ball.x - paddleWidth / 2;
       aiX = Math.max(0, Math.min(W - paddleWidth, aiX));
 
       // Ball movement
       ball.x += ball.vx * difficultyMultiplier;
       ball.y += ball.vy * difficultyMultiplier;
 
-      // Wall collision
+      // Wall bounce
       if (ball.x < ball.size || ball.x > W - ball.size) ball.vx *= -1;
 
-      // Player paddle
+      // Player paddle collision
       if (ball.y + ball.size > H - paddleHeight &&
           ball.x > playerX && ball.x < playerX + paddleWidth) {
         ball.vy *= -1;
         score += Math.floor(5 * difficultyMultiplier);
       }
 
-      // AI paddle
+      // AI paddle collision
       if (ball.y - ball.size < paddleHeight &&
           ball.x > aiX && ball.x < aiX + paddleWidth) {
         ball.vy *= -1;
       }
 
-      // Missed ball
-      if (ball.y > H || ball.y < 0) {
+      // If AI fails (ball hits top edge)
+      if (ball.y < 0) {
+        score += 50;
+        showAIFailureMessage();
+        resetBall();
+      }
+
+      // If player misses (ball hits bottom)
+      if (ball.y > H) {
         lives--;
         if (lives <= 0) {
           gameOver();
@@ -134,11 +150,12 @@
       drawPaddle(aiX, 0);
       drawBall();
       drawUI();
+      drawAIFailureDialog();
 
       requestAnimationFrame(update);
     }
 
-    // Swipe input for mobile
+    // Mobile swipe input
     let lastX = null;
     canvas.addEventListener("touchstart", e => {
       lastX = e.touches[0].clientX;
