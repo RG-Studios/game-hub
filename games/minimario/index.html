@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mini Platformer</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #5c94fc;
+    }
+
+    canvas {
+      display: block;
+      background: #8ec07c;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="800" height="400"></canvas>
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const player = {
+      x: 50,
+      y: 0,
+      width: 30,
+      height: 30,
+      velocityX: 0,
+      velocityY: 0,
+      jumping: true,
+      color: "red"
+    };
+
+    const gravity = 0.5;
+    const friction = 0.8;
+    const platforms = [
+      { x: 0, y: 370, width: 800, height: 30 },
+      { x: 200, y: 300, width: 120, height: 10 },
+      { x: 400, y: 250, width: 120, height: 10 },
+      { x: 600, y: 200, width: 120, height: 10 }
+    ];
+
+    const keys = {};
+
+    document.addEventListener("keydown", e => keys[e.code] = true);
+    document.addEventListener("keyup", e => keys[e.code] = false);
+
+    function rectsCollide(r1, r2) {
+      return r1.x < r2.x + r2.width &&
+             r1.x + r1.width > r2.x &&
+             r1.y < r2.y + r2.height &&
+             r1.y + r1.height > r2.y;
+    }
+
+    function update() {
+      if (keys["ArrowLeft"]) player.velocityX = -4;
+      if (keys["ArrowRight"]) player.velocityX = 4;
+
+      if (keys["Space"] && !player.jumping) {
+        player.velocityY = -10;
+        player.jumping = true;
+      }
+
+      player.velocityY += gravity;
+      player.x += player.velocityX;
+      player.y += player.velocityY;
+      player.velocityX *= friction;
+
+      if (player.y + player.height > canvas.height) {
+        player.y = canvas.height - player.height;
+        player.jumping = false;
+        player.velocityY = 0;
+      }
+
+      for (let plat of platforms) {
+        if (rectsCollide(player, plat)) {
+          if (player.velocityY > 0) {
+            player.y = plat.y - player.height;
+            player.jumping = false;
+            player.velocityY = 0;
+          }
+        }
+      }
+
+      draw();
+      requestAnimationFrame(update);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw player
+      ctx.fillStyle = player.color;
+      ctx.fillRect(player.x, player.y, player.width, player.height);
+
+      // Draw platforms
+      ctx.fillStyle = "#654321";
+      for (let plat of platforms) {
+        ctx.fillRect(plat.x, plat.y, plat.width, plat.height);
+      }
+    }
+
+    update();
+  </script>
+</body>
+</html>
