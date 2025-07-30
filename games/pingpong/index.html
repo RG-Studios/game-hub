@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Advanced Ping Pong AI</title>
+  <title>Ping Pong Restartable</title>
   <style>
     html, body {
       margin: 0;
@@ -16,10 +16,25 @@
       background: radial-gradient(#111, #000);
       touch-action: none;
     }
+    #restartBtn {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 12px 24px;
+      font-size: 18px;
+      background: #00ccff;
+      color: #000;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      display: none;
+    }
   </style>
 </head>
 <body>
   <canvas id="game"></canvas>
+  <button id="restartBtn" onclick="restartGame()">Restart Game</button>
 
   <script>
     const canvas = document.getElementById("game");
@@ -30,23 +45,31 @@
     canvas.height = H;
 
     const paddleWidth = 100, paddleHeight = 14;
-    let playerX = W / 2 - paddleWidth / 2;
-    let aiX = W / 2 - paddleWidth / 2;
+    let playerX, aiX, ball, lives, score, timeStart, difficultyMultiplier, gameRunning, aiFailedMessageTimer;
 
-    let ball = {
-      x: W / 2,
-      y: H / 2,
-      size: 10,
-      vx: 4 * (Math.random() > 0.5 ? 1 : -1),
-      vy: 5
-    };
+    const restartBtn = document.getElementById("restartBtn");
 
-    let lives = 3;
-    let score = 0;
-    let timeStart = Date.now();
-    let difficultyMultiplier = 1;
-    let gameRunning = true;
-    let aiFailedMessageTimer = 0;
+    function initGame() {
+      playerX = W / 2 - paddleWidth / 2;
+      aiX = W / 2 - paddleWidth / 2;
+
+      ball = {
+        x: W / 2,
+        y: H / 2,
+        size: 10,
+        vx: 4 * (Math.random() > 0.5 ? 1 : -1),
+        vy: 5
+      };
+
+      lives = 3;
+      score = 0;
+      timeStart = Date.now();
+      difficultyMultiplier = 1;
+      aiFailedMessageTimer = 0;
+      gameRunning = true;
+      restartBtn.style.display = "none";
+      update();
+    }
 
     function drawPaddle(x, y) {
       ctx.fillStyle = "#00ffff";
@@ -94,7 +117,8 @@
       gameRunning = false;
       ctx.fillStyle = "#f00";
       ctx.font = "24px sans-serif";
-      ctx.fillText("Game Over! Final Score: " + score, W / 2 - 120, H / 2);
+      ctx.fillText("Game Over! Final Score: " + score, W / 2 - 120, H / 2 + 40);
+      restartBtn.style.display = "block";
     }
 
     function update() {
@@ -104,38 +128,31 @@
       let elapsed = (Date.now() - timeStart) / 1000;
       difficultyMultiplier = 1 + elapsed / 30;
 
-      // AI Precision: follow ball perfectly
       aiX = ball.x - paddleWidth / 2;
       aiX = Math.max(0, Math.min(W - paddleWidth, aiX));
 
-      // Ball movement
       ball.x += ball.vx * difficultyMultiplier;
       ball.y += ball.vy * difficultyMultiplier;
 
-      // Wall bounce
       if (ball.x < ball.size || ball.x > W - ball.size) ball.vx *= -1;
 
-      // Player paddle collision
       if (ball.y + ball.size > H - paddleHeight &&
           ball.x > playerX && ball.x < playerX + paddleWidth) {
         ball.vy *= -1;
         score += Math.floor(5 * difficultyMultiplier);
       }
 
-      // AI paddle collision
       if (ball.y - ball.size < paddleHeight &&
           ball.x > aiX && ball.x < aiX + paddleWidth) {
         ball.vy *= -1;
       }
 
-      // If AI fails (ball hits top edge)
       if (ball.y < 0) {
         score += 50;
         showAIFailureMessage();
         resetBall();
       }
 
-      // If player misses (ball hits bottom)
       if (ball.y > H) {
         lives--;
         if (lives <= 0) {
@@ -155,7 +172,11 @@
       requestAnimationFrame(update);
     }
 
-    // Mobile swipe input
+    function restartGame() {
+      initGame();
+    }
+
+    // Swipe controls
     let lastX = null;
     canvas.addEventListener("touchstart", e => {
       lastX = e.touches[0].clientX;
@@ -174,7 +195,7 @@
       lastX = null;
     });
 
-    update();
+    initGame();
   </script>
 </body>
 </html>
