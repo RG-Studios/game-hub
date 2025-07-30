@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ping Pong</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: black;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      background: #111;
+    }
+    #left-btn, #right-btn {
+      position: fixed;
+      width: 60px;
+      height: 60px;
+      bottom: 30px;
+      border-radius: 50%;
+      background: white;
+      opacity: 0.6;
+      border: none;
+      font-size: 24px;
+    }
+    #left-btn {
+      left: 30px;
+    }
+    #right-btn {
+      right: 30px;
+    }
+    #restart-btn {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 10px 20px;
+      font-size: 18px;
+      background: white;
+      border-radius: 10px;
+      border: none;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <button id="left-btn">▲</button>
+  <button id="right-btn">▼</button>
+  <button id="restart-btn">Restart</button>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const restartBtn = document.getElementById("restart-btn");
+
+    let W = window.innerWidth;
+    let H = window.innerHeight;
+    canvas.width = W;
+    canvas.height = H;
+
+    let paddleHeight = 100, paddleWidth = 12;
+    let leftY = H/2 - paddleHeight/2, rightY = H/2 - paddleHeight/2;
+    let leftSpeed = 0;
+    let ball = { x: W/2, y: H/2, size: 12, vx: 6, vy: 4 };
+    let playerScore = 0, aiScore = 0;
+    let gameRunning = true;
+
+    function drawPaddle(x, y) {
+      ctx.fillStyle = "white";
+      ctx.fillRect(x, y, paddleWidth, paddleHeight);
+    }
+
+    function drawBall() {
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.size, 0, Math.PI*2);
+      ctx.fillStyle = "white";
+      ctx.fill();
+    }
+
+    function drawScore() {
+      ctx.fillStyle = "white";
+      ctx.font = "24px sans-serif";
+      ctx.fillText(`${playerScore} : ${aiScore}`, W/2 - 30, 40);
+    }
+
+    function update() {
+      if (!gameRunning) return;
+
+      ctx.clearRect(0, 0, W, H);
+
+      // Move player paddle
+      leftY += leftSpeed;
+      leftY = Math.max(0, Math.min(H - paddleHeight, leftY));
+
+      // AI paddle
+      rightY += (ball.y - (rightY + paddleHeight/2)) * 0.06;
+
+      // Ball movement
+      ball.x += ball.vx;
+      ball.y += ball.vy;
+
+      // Collision top/bottom
+      if (ball.y < ball.size || ball.y > H - ball.size) {
+        ball.vy *= -1;
+      }
+
+      // Collision with paddles
+      if (
+        ball.x - ball.size < paddleWidth &&
+        ball.y > leftY &&
+        ball.y < leftY + paddleHeight
+      ) {
+        ball.vx *= -1;
+        ball.x = paddleWidth + ball.size;
+      }
+      if (
+        ball.x + ball.size > W - paddleWidth &&
+        ball.y > rightY &&
+        ball.y < rightY + paddleHeight
+      ) {
+        ball.vx *= -1;
+        ball.x = W - paddleWidth - ball.size;
+      }
+
+      // Score
+      if (ball.x < 0) {
+        aiScore++;
+        resetBall();
+      }
+      if (ball.x > W) {
+        playerScore++;
+        resetBall();
+      }
+
+      drawPaddle(0, leftY);
+      drawPaddle(W - paddleWidth, rightY);
+      drawBall();
+      drawScore();
+
+      requestAnimationFrame(update);
+    }
+
+    function resetBall() {
+      ball.x = W/2;
+      ball.y = H/2;
+      ball.vx = (Math.random() > 0.5 ? 6 : -6);
+      ball.vy = (Math.random() > 0.5 ? 4 : -4);
+
+      if (playerScore === 5 || aiScore === 5) {
+        gameRunning = false;
+        restartBtn.style.display = "block";
+        ctx.fillStyle = "yellow";
+        ctx.font = "36px sans-serif";
+        ctx.fillText(playerScore > aiScore ? "You Win!" : "You Lose!", W/2 - 80, H/2);
+      }
+    }
+
+    // Controls
+    document.getElementById("left-btn").ontouchstart = () => leftSpeed = -8;
+    document.getElementById("right-btn").ontouchstart = () => leftSpeed = 8;
+    document.getElementById("left-btn").ontouchend = () => leftSpeed = 0;
+    document.getElementById("right-btn").ontouchend = () => leftSpeed = 0;
+
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowUp" || e.key === "w") leftSpeed = -8;
+      if (e.key === "ArrowDown" || e.key === "s") leftSpeed = 8;
+    });
+    window.addEventListener("keyup", () => leftSpeed = 0);
+
+    restartBtn.onclick = () => {
+      playerScore = 0;
+      aiScore = 0;
+      gameRunning = true;
+      restartBtn.style.display = "none";
+      resetBall();
+      update();
+    };
+
+    update();
+  </script>
+</body>
+</html>
