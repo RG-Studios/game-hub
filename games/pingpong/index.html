@@ -3,183 +3,159 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Neon Ping Pong</title>
+  <title>Advanced Ping Pong</title>
   <style>
+    * {
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
     html, body {
       margin: 0;
       padding: 0;
-      background: black;
       overflow: hidden;
-      font-family: "Segoe UI", sans-serif;
+      background: #000;
     }
     canvas {
       display: block;
-      background: linear-gradient(to right, #0f0f0f, #1a1a1a);
-    }
-    .btn {
-      position: fixed;
-      width: 60px;
-      height: 60px;
-      bottom: 30px;
-      border-radius: 50%;
-      background: #0ff;
-      border: 2px solid #0ff;
-      color: black;
-      font-size: 24px;
-      font-weight: bold;
-      box-shadow: 0 0 10px #0ff;
-      opacity: 0.8;
-      z-index: 99;
-    }
-    #left-btn {
-      left: 20px;
-    }
-    #right-btn {
-      left: 100px;
-    }
-    #restart-btn {
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 10px 20px;
-      font-size: 18px;
-      background: #ff0;
-      border: none;
-      border-radius: 8px;
-      box-shadow: 0 0 8px #ff0;
-      display: none;
-      font-weight: bold;
-      z-index: 100;
+      background: radial-gradient(#111, #000);
+      touch-action: none;
     }
   </style>
 </head>
 <body>
   <canvas id="game"></canvas>
-  <button id="left-btn" class="btn">▲</button>
-  <button id="right-btn" class="btn">▼</button>
-  <button id="restart-btn">Restart</button>
 
   <script>
     const canvas = document.getElementById("game");
     const ctx = canvas.getContext("2d");
-    const restartBtn = document.getElementById("restart-btn");
-
     let W = window.innerWidth;
     let H = window.innerHeight;
     canvas.width = W;
     canvas.height = H;
 
-    let paddleHeight = 100, paddleWidth = 14;
-    let leftY = H / 2 - paddleHeight / 2;
-    let rightY = H / 2 - paddleHeight / 2;
-    let leftSpeed = 0;
+    const paddleWidth = 100, paddleHeight = 14;
+    let playerX = W / 2 - paddleWidth / 2;
+    let aiX = W / 2 - paddleWidth / 2;
 
-    let ball = { x: W / 2, y: H / 2, size: 12, vx: 6, vy: 4 };
-    let playerScore = 0, aiScore = 0;
+    let ball = {
+      x: W / 2,
+      y: H / 2,
+      size: 10,
+      vx: 4 * (Math.random() > 0.5 ? 1 : -1),
+      vy: 5
+    };
+
+    let lives = 3;
+    let score = 0;
+    let timeStart = Date.now();
+    let difficultyMultiplier = 1;
     let gameRunning = true;
 
     function drawPaddle(x, y) {
-      ctx.fillStyle = "#0ff";
+      ctx.fillStyle = "#00ffff";
       ctx.fillRect(x, y, paddleWidth, paddleHeight);
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = "#0ff";
     }
 
     function drawBall() {
       ctx.beginPath();
       ctx.arc(ball.x, ball.y, ball.size, 0, Math.PI * 2);
-      ctx.fillStyle = "#ff0";
+      ctx.fillStyle = "#ffff00";
       ctx.fill();
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = "#ff0";
     }
 
-    function drawScore() {
+    function drawUI() {
       ctx.fillStyle = "#fff";
-      ctx.font = "26px Segoe UI";
-      ctx.fillText(`${playerScore} : ${aiScore}`, W / 2 - 30, 50);
+      ctx.font = "16px sans-serif";
+      let elapsedTime = Math.floor((Date.now() - timeStart) / 1000);
+      ctx.fillText("Score: " + score, 10, 20);
+      ctx.fillText("Time: " + elapsedTime + "s", 10, 40);
+      ctx.fillText("Lives: " + "❤️".repeat(lives), W - 100, 20);
+    }
+
+    function resetBall() {
+      ball.x = W / 2;
+      ball.y = H / 2;
+      ball.vx = 4 * (Math.random() > 0.5 ? 1 : -1);
+      ball.vy = 5;
+      difficultyMultiplier = 1;
+    }
+
+    function gameOver() {
+      gameRunning = false;
+      ctx.fillStyle = "#0f0";
+      ctx.font = "24px sans-serif";
+      ctx.fillText("Game Over! Final Score: " + score, W / 2 - 120, H / 2);
     }
 
     function update() {
       if (!gameRunning) return;
 
       ctx.clearRect(0, 0, W, H);
+      let elapsed = (Date.now() - timeStart) / 1000;
 
-      leftY += leftSpeed;
-      leftY = Math.max(0, Math.min(H - paddleHeight, leftY));
+      difficultyMultiplier = 1 + elapsed / 30;
 
-      rightY += (ball.y - (rightY + paddleHeight / 2)) * 0.06;
+      // AI follows the ball with precision based on difficulty
+      aiX += ((ball.x - (aiX + paddleWidth / 2)) * 0.05 * difficultyMultiplier);
+      aiX = Math.max(0, Math.min(W - paddleWidth, aiX));
 
-      ball.x += ball.vx;
-      ball.y += ball.vy;
+      // Ball movement
+      ball.x += ball.vx * difficultyMultiplier;
+      ball.y += ball.vy * difficultyMultiplier;
 
-      if (ball.y < ball.size || ball.y > H - ball.size) {
+      // Wall collision
+      if (ball.x < ball.size || ball.x > W - ball.size) ball.vx *= -1;
+
+      // Player paddle
+      if (ball.y + ball.size > H - paddleHeight &&
+          ball.x > playerX && ball.x < playerX + paddleWidth) {
+        ball.vy *= -1;
+        score += Math.floor(5 * difficultyMultiplier);
+      }
+
+      // AI paddle
+      if (ball.y - ball.size < paddleHeight &&
+          ball.x > aiX && ball.x < aiX + paddleWidth) {
         ball.vy *= -1;
       }
 
-      if (ball.x - ball.size < paddleWidth && ball.y > leftY && ball.y < leftY + paddleHeight) {
-        ball.vx *= -1;
-        ball.x = paddleWidth + ball.size;
+      // Missed ball
+      if (ball.y > H || ball.y < 0) {
+        lives--;
+        if (lives <= 0) {
+          gameOver();
+          return;
+        } else {
+          resetBall();
+        }
       }
 
-      if (ball.x + ball.size > W - paddleWidth && ball.y > rightY && ball.y < rightY + paddleHeight) {
-        ball.vx *= -1;
-        ball.x = W - paddleWidth - ball.size;
-      }
-
-      if (ball.x < 0) {
-        aiScore++;
-        resetBall();
-      }
-
-      if (ball.x > W) {
-        playerScore++;
-        resetBall();
-      }
-
-      drawPaddle(0, leftY);
-      drawPaddle(W - paddleWidth, rightY);
+      drawPaddle(playerX, H - paddleHeight);
+      drawPaddle(aiX, 0);
       drawBall();
-      drawScore();
+      drawUI();
 
       requestAnimationFrame(update);
     }
 
-    function resetBall() {
-      ball.x = W / 2;
-      ball.y = H / 2;
-      ball.vx = Math.random() > 0.5 ? 6 : -6;
-      ball.vy = Math.random() > 0.5 ? 4 : -4;
-
-      if (playerScore === 5 || aiScore === 5) {
-        gameRunning = false;
-        restartBtn.style.display = "block";
-        ctx.fillStyle = "#0f0";
-        ctx.font = "32px Segoe UI";
-        ctx.fillText(playerScore > aiScore ? "You Win!" : "You Lose!", W / 2 - 80, H / 2);
-      }
-    }
-
-    document.getElementById("left-btn").ontouchstart = () => leftSpeed = -8;
-    document.getElementById("right-btn").ontouchstart = () => leftSpeed = 8;
-    document.getElementById("left-btn").ontouchend = () => leftSpeed = 0;
-    document.getElementById("right-btn").ontouchend = () => leftSpeed = 0;
-
-    window.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowUp" || e.key === "w") leftSpeed = -8;
-      if (e.key === "ArrowDown" || e.key === "s") leftSpeed = 8;
+    // Swipe input for mobile
+    let lastX = null;
+    canvas.addEventListener("touchstart", e => {
+      lastX = e.touches[0].clientX;
     });
-    window.addEventListener("keyup", () => leftSpeed = 0);
 
-    restartBtn.onclick = () => {
-      playerScore = 0;
-      aiScore = 0;
-      gameRunning = true;
-      restartBtn.style.display = "none";
-      resetBall();
-      update();
-    };
+    canvas.addEventListener("touchmove", e => {
+      if (lastX != null) {
+        let deltaX = e.touches[0].clientX - lastX;
+        playerX += deltaX;
+        playerX = Math.max(0, Math.min(W - paddleWidth, playerX));
+        lastX = e.touches[0].clientX;
+      }
+    });
+
+    canvas.addEventListener("touchend", () => {
+      lastX = null;
+    });
 
     update();
   </script>
